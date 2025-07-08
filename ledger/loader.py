@@ -132,6 +132,7 @@ def updateLedger():
 
         for row in RawTransaction.objects.filter(ingested=False):
             logger.info(f"matching {row}")
+            
             if (row.action == OPTION_ACTIONS[0] or row.action == OPTION_ACTIONS[2]):
                 # See if we can find an OPEN ledger entry for this symbol, link to it and close it out and set ingested True
                 try:
@@ -141,8 +142,8 @@ def updateLedger():
                     l.closed = row.transactionDate
                     l.amount += row.totalAmount
                     l.quanity -= row.quantity
-                    if l.quanity == 0:
-                        l.status = "Closed"
+                    # if l.quanity <= 0:
+                    l.status = "Closed"
 
                     l.save()
 

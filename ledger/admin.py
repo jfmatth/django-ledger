@@ -12,7 +12,7 @@ admin.site.register(RawCSV, RawCSVAdmin)
 
 class RawTransactionAdmin(admin.ModelAdmin):
     list_display = ["transactionDate", "symbol", "action", "quantity", "totalAmount", "ledgerEntry"]
-    list_filter = ['ingested', 'action']
+    list_filter = ['ingested', 'action',"strikeSymbol"]
 admin.site.register(RawTransaction, RawTransactionAdmin)
 
 
