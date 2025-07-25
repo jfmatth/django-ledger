@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 import logging
 
-from ...loader import loadCSV, buildStrikeInfo, buldTransactions, updateLedger
+from ...command_loader import loadCSV, buildStrikeInfo, buldTransactions, updateLedger
 
 logger = logging.getLogger(__name__)
 

@@ -30,8 +30,8 @@ class Ledger(BaseModel):
     opened      = models.DateField(blank=True, null=True)
     closed      = models.DateField(blank=True, null=True)
     status      = models.CharField(max_length=10, blank=True, null=True)
-    amount      = models.DecimalField(max_digits=20, decimal_places=3)
-    quanity     = models.DecimalField(max_digits=10, decimal_places=3)
+    amount      = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    quantity     = models.DecimalField(max_digits=10, decimal_places=3, default=0)
 
     def __str__(self):
         return f"{self.symbol}"
@@ -39,7 +39,7 @@ class Ledger(BaseModel):
 
 class RawTransaction(BaseModel):
     # Same fields as Schwab CVS
-    transactionDate = models.DateField()
+    transactionDate = models.DateField(db_index=True)
     action          = models.CharField(max_length=50)
     symbol          = models.CharField(max_length=50)
     description     = models.CharField(max_length=50)
