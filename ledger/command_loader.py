@@ -147,9 +147,10 @@ def updateLedger():
             if row.action == OPTION_ACTIONS[1]:     # STO
                 if created:
                     l.opened = row.transactionDate
+                    l.investedAmount = row.totalAmount
                     l.status = "Open"
 
-                l.amount += row.totalAmount
+                l.closedAmount += row.totalAmount
                 l.quantity += row.quantity
 
             if (row.action == OPTION_ACTIONS[0] or row.action == OPTION_ACTIONS[2]):     # BTC or assigned
@@ -158,7 +159,7 @@ def updateLedger():
                     l.status = "Open"
 
                 l.closed = row.transactionDate
-                l.amount += row.totalAmount
+                l.closedAmount += row.totalAmount
                 l.quantity -= row.quantity
 
             if l.quantity == 0:

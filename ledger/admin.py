@@ -22,7 +22,7 @@ class TransactionInLine(admin.TabularInline):
 
 
 class LedgerAdmin(admin.ModelAdmin):
-    list_display = ["symbol", "status", "opened", "amount" ]
+    list_display = ["symbol", "status", "opened", "investedAmount", "closedAmount" ]
     list_filter = ['status']
 
     inlines = [
