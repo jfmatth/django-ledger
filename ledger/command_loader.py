@@ -21,16 +21,8 @@ NON_ACTIONS = ["MoneyLink Transfer",
                 "Sell", "Tax Withholding"
             ]
 
-def loadCSV(filename):
-    with open(filename,"r") as f:
-        temp = RawCSV()
-        temp.filename = filename
-        temp.data = f.read()
-        temp.ingested = False
-        temp.save()
 
-
-def schwabDate(datestr):
+def schwab_date(datestr):
     # converts an incoming transaction date to the right date
     # some transactions have a "<date1> as of <date2>" entry for some stupid reason, when the date of the transaction
     # is date2, lame
@@ -52,10 +44,23 @@ def hash_row(row):
     return hashlib.sha256(row.encode()).hexdigest()
 
 
+def loadCSV(filename):
+    logger.info(f"loading CSV {filename}")
+    
+    with open(filename,"r") as f:
+        temp = RawCSV()
+        temp.filename = filename
+        temp.data = f.read()
+        temp.ingested = False
+        temp.save()
+
+
 def buldTransactions():
     """
     Converts from CSV into records in our Table
     """
+    logger.info(f'building Transactions from CSV')
+
     for csvrow in RawCSV.objects.filter(ingested=False):
 
         with StringIO(csvrow.data) as csvfile:
@@ -63,29 +68,27 @@ def buldTransactions():
     
             for row in reader:
                 # see if we have to add this record, or if it's already there based on the hashid
-
                 hash = hash_row("".join(row.values() ) )
                 try:
                     RawTransaction.objects.get(hashID=hash)
                 except ObjectDoesNotExist:
 
-                    logging.info(f"Adding {row}")
+                    logging.debug(f"Adding {row}")
                     
                     record = RawTransaction()
 
-                    record.transactionDate  = schwabDate(row['Date'])
+                    record.transactionDate  = schwab_date(row['Date'])
                     record.action           = row['Action']
                     record.symbol           = row['Symbol']
                     record.description      = row['Description']
                     record.quantity         = float(row['Quantity'].replace(",",""))  if row['Quantity'] != "" else 0
                     record.price            = float(row['Price'].replace("$","")) if row['Price'] != "" else 0
-                    # record.extrafees        = float(row['Fees & Comm'])
                     record.extrafees        = 0
                     record.totalAmount      = float(row['Amount'].replace("$","")) if row['Amount'] != "" else 0
 
                     record.hashID           = hash
 
-                    logger.info("Saving Row")
+                    logger.debug(f"Saving Row {record}")
                     record.save()
 
         csvrow.ingested = True
@@ -125,25 +128,24 @@ def updateLedger():
     """
     Creates or updates ledgers on anything that's not processed
 
-
-    Need to close when qty is 0 after BTC is subtracted from STO
-
+    This is the meat of the program for now, make ledgers for tracking how we did on option sales
     """
-
-    # Dooh, have to run twice since closes might be before the opens in the CSV
-    # for loop in range(2):
+    logger.debug("updateLedger")
 
     for row in RawTransaction.objects.filter(ingested=False).order_by("transactionDate"):
-        # logger.info(f"matching {row}")
+        logger.debug(f"matching {row}")
         
-        # STO or BTC for now
         if row.action in OPTION_ACTIONS:
-            logger.info(f'Not ingested {row}')
+            logger.debug(f'Not ingested {row}')
 
+            # We either have a record or not.
+            # if we do, then possibly add this to the ledger, but if qty==0 then close it
+            # if we don't, make a new ledger
             l, created = Ledger.objects.get_or_create(symbol=row.symbol, status="Open")
 
-            logger.info(f"{row.action}")
+            logger.debug(f"{row.action}")
 
+            # We've sold an option, might be the first one for this "symbol" or adding to it
             if row.action == OPTION_ACTIONS[1]:     # STO
                 if created:
                     l.opened = row.transactionDate
@@ -153,6 +155,7 @@ def updateLedger():
                 l.closedAmount += row.totalAmount
                 l.quantity += row.quantity
 
+            # We might be closing out an open ledger or got assigned, either way, add to it
             if (row.action == OPTION_ACTIONS[0] or row.action == OPTION_ACTIONS[2]):     # BTC or assigned
                 if created:
                     l.opened = row.transactionDate
@@ -162,11 +165,13 @@ def updateLedger():
                 l.closedAmount += row.totalAmount
                 l.quantity -= row.quantity
 
+            # if we have balanced out our qty, most likely we are done, so close this ledger
             if l.quantity == 0:
                 l.status = "Closed"
 
             l.save()
 
+            #  attach this leedger entry to the transaction, for the 1:N relation
             row.ledgerEntry = l
             row.ingested = True
             row.save()
