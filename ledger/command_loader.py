@@ -1,5 +1,7 @@
 """
-All management commands here for clarity
+Loader management commands.
+
+I put them in the folder for the app, not in the management / commmands folder, easier.
 """
 import csv, hashlib, datetime
 from decimal import Decimal
@@ -13,7 +15,7 @@ from ledger.models import RawCSV, RawTransaction, Ledger
 logger = logging.getLogger(__name__)
 
 #  these are the actions we know how to process so far
-OPTION_ACTIONS = ["Buy to Close", "Sell to Open", "Assigned"]
+OPTION_ACTIONS = ["Buy to Close", "Sell to Open", "Assigned", "Expired"]
 
 NON_ACTIONS = ["MoneyLink Transfer", 
                 "Non-Qualified Div", "Qualified Dividend",
@@ -132,6 +134,9 @@ def updateLedger():
     """
     logger.debug("updateLedger")
 
+    OPTIONS_OPEN = [ OPTION_ACTIONS[1] ]
+    OPTIONS_CLOSE = [ OPTION_ACTIONS[0] + OPTION_ACTIONS[2] + OPTION_ACTIONS[3] ]
+
     for row in RawTransaction.objects.filter(ingested=False).order_by("transactionDate"):
         logger.debug(f"matching {row}")
         
@@ -146,7 +151,7 @@ def updateLedger():
             logger.debug(f"{row.action}")
 
             # We've sold an option, might be the first one for this "symbol" or adding to it
-            if row.action == OPTION_ACTIONS[1]:     # STO
+            if row.action in OPTIONS_OPEN:
                 if created:
                     l.opened = row.transactionDate
                     l.investedAmount = row.totalAmount
@@ -155,8 +160,7 @@ def updateLedger():
                 l.closedAmount += row.totalAmount
                 l.quantity += row.quantity
 
-            # We might be closing out an open ledger or got assigned, either way, add to it
-            if (row.action == OPTION_ACTIONS[0] or row.action == OPTION_ACTIONS[2]):     # BTC or assigned
+            if row.action in OPTIONS_CLOSE:
                 if created:
                     l.opened = row.transactionDate
                     l.status = "Open"
