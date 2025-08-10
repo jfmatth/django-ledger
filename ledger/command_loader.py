@@ -57,12 +57,12 @@ def loadCSV(filename):
         temp.save()
 
 
-def buldTransactions():
+def buildTransactions():
     """
     Converts from CSV into records in our Table
     """
     logger.info(f'building Transactions from CSV')
-
+    logger.info(f"found {RawCSV.objects.filter(ingested=False).count()} records")
     for csvrow in RawCSV.objects.filter(ingested=False):
 
         with StringIO(csvrow.data) as csvfile:

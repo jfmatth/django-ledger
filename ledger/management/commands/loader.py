@@ -14,6 +14,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         loader.loadCSV(options['filename'][0])
-        loader.buldTransactions()
+        loader.buildTransactions()
         loader.buildStrikeInfo()
         loader.updateLedger()
