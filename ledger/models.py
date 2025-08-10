@@ -36,11 +36,6 @@ class Ledger(BaseModel):
 
     def __str__(self):
         return f"{self.symbol}"
-    
-
-
-
-
 
 class RawTransaction(BaseModel):
     # Same fields as Schwab CVS
