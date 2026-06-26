@@ -11,3 +11,4 @@ wheels/
 db.sqlite3
 .vscode/settings.json
 data.csv
+db.sqlite3.blank
