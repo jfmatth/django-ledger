@@ -36,6 +36,12 @@ class Ledger(BaseModel):
 
     def __str__(self):
         return f"{self.symbol}"
+    
+
+    def profit(self):
+        return self.investedAmount - self.closedAmount
+    
+
 
 class RawTransaction(BaseModel):
     # Same fields as Schwab CVS

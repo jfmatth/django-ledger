@@ -9,7 +9,6 @@ class RawCSVAdmin(admin.ModelAdmin):
 admin.site.register(RawCSV, RawCSVAdmin)
 
 
-
 class RawTransactionAdmin(admin.ModelAdmin):
     list_display = ["transactionDate", "symbol", "action", "quantity", "totalAmount", "ledgerEntry"]
     list_filter = ['ingested', 'action',"strikeSymbol"]
@@ -22,7 +21,7 @@ class TransactionInLine(admin.TabularInline):
 
 
 class LedgerAdmin(admin.ModelAdmin):
-    list_display = ["symbol", "status", "opened", "investedAmount", "closedAmount" ]
+    list_display = ["symbol", "status", "opened", "investedAmount", "closedAmount", "profit" ]
     list_filter = ['status']
 
     inlines = [

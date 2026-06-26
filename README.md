@@ -3,6 +3,8 @@
 python manage.py loadcsv <datafile>
 ```
 
+## CSV format
+
 ## TODO
 
 
