@@ -1,11 +1,12 @@
 """
-Loader management commands.
-
-I put them in the folder for the app, not in the management / commmands folder, easier.
+All management commands here for clarity
 """
 import csv, hashlib, datetime
 from decimal import Decimal
 from io import StringIO
+from decimal import Decimal
+import re
+
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -15,7 +16,7 @@ from ledger.models import RawCSV, RawTransaction, Ledger
 logger = logging.getLogger(__name__)
 
 #  these are the actions we know how to process so far
-OPTION_ACTIONS = ["Buy to Close", "Sell to Open", "Assigned", "Expired"]
+OPTION_ACTIONS = ["Buy to Close", "Sell to Open", "Assigned"]
 
 NON_ACTIONS = ["MoneyLink Transfer", 
                 "Non-Qualified Div", "Qualified Dividend",
@@ -23,6 +24,13 @@ NON_ACTIONS = ["MoneyLink Transfer",
                 "Sell", "Tax Withholding"
             ]
 
+
+
+def dollars_to_decimal(s: str) -> Decimal:
+    s = s.strip()
+    s = s.replace("(", "-").replace(")", "")  # accounting negatives
+    cleaned = re.sub(r"[^0-9.\-]", "", s)
+    return Decimal(cleaned)
 
 def schwab_date(datestr):
     # converts an incoming transaction date to the right date
@@ -57,12 +65,12 @@ def loadCSV(filename):
         temp.save()
 
 
-def buildTransactions():
+def buldTransactions():
     """
     Converts from CSV into records in our Table
     """
     logger.info(f'building Transactions from CSV')
-    logger.info(f"found {RawCSV.objects.filter(ingested=False).count()} records")
+
     for csvrow in RawCSV.objects.filter(ingested=False):
 
         with StringIO(csvrow.data) as csvfile:
@@ -79,14 +87,14 @@ def buildTransactions():
                     
                     record = RawTransaction()
 
-                    record.transactionDate  = schwab_date(row['Date'])
-                    record.action           = row['Action']
-                    record.symbol           = row['Symbol']
-                    record.description      = row['Description']
-                    record.quantity         = float(row['Quantity'].replace(",",""))  if row['Quantity'] != "" else 0
-                    record.price            = float(row['Price'].replace("$","")) if row['Price'] != "" else 0
+                    record.transactionDate  = schwab_date(row['Date'].strip())
+                    record.action           = row['Action'].strip()
+                    record.symbol           = row['Symbol'].strip()
+                    record.description      = row['Description'].strip()
+                    record.quantity         = float(dollars_to_decimal(row['Quantity']))  if row['Quantity'] != "" else 0
+                    record.price            = float(dollars_to_decimal(row['Price'])) if row['Price'] != "" else 0
                     record.extrafees        = 0
-                    record.totalAmount      = float(row['Amount'].replace("$","")) if row['Amount'] != "" else 0
+                    record.totalAmount      = float(dollars_to_decimal(row['Amount']) ) if row['Amount'] != "" else 0
 
                     record.hashID           = hash
 
@@ -134,9 +142,6 @@ def updateLedger():
     """
     logger.debug("updateLedger")
 
-    OPTIONS_OPEN = [ OPTION_ACTIONS[1] ]
-    OPTIONS_CLOSE = [ OPTION_ACTIONS[0] + OPTION_ACTIONS[2] + OPTION_ACTIONS[3] ]
-
     for row in RawTransaction.objects.filter(ingested=False).order_by("transactionDate"):
         logger.debug(f"matching {row}")
         
@@ -151,7 +156,7 @@ def updateLedger():
             logger.debug(f"{row.action}")
 
             # We've sold an option, might be the first one for this "symbol" or adding to it
-            if row.action in OPTIONS_OPEN:
+            if row.action == OPTION_ACTIONS[1]:     # STO
                 if created:
                     l.opened = row.transactionDate
                     l.investedAmount = row.totalAmount
@@ -160,13 +165,19 @@ def updateLedger():
                 l.closedAmount += row.totalAmount
                 l.quantity += row.quantity
 
-            if row.action in OPTIONS_CLOSE:
+            # We might be closing out an open ledger or got assigned, either way, add to it
+            if (row.action == OPTION_ACTIONS[0] or row.action == OPTION_ACTIONS[2]):     # BTC or assigned
+                logger.info(f'BTC - {row}\n, {l}')
                 if created:
                     l.opened = row.transactionDate
                     l.status = "Open"
 
                 l.closed = row.transactionDate
-                l.closedAmount += row.totalAmount
+                if row.action == OPTION_ACTIONS[2]:
+                    # When we are assigned, there is no close out price
+                    l.closedAmount = 0
+                else:
+                    l.closedAmount += row.totalAmount
                 l.quantity -= row.quantity
 
             # if we have balanced out our qty, most likely we are done, so close this ledger
@@ -179,3 +190,14 @@ def updateLedger():
             row.ledgerEntry = l
             row.ingested = True
             row.save()
+
+def main():
+    # loader.loadCSV(options['filename'][0])
+    buldTransactions()
+    buildStrikeInfo()
+    updateLedger()
+
+def process():
+    buldTransactions()
+    buildStrikeInfo()
+    updateLedger()
