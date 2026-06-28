@@ -24,6 +24,7 @@ class RawCSV(BaseModel):
     def __str__(self):
         return f"{self.filename}-{self.ingested}"
 
+
 class Ledger(BaseModel):
     symbol      = models.CharField(max_length=50)
 
@@ -36,11 +37,12 @@ class Ledger(BaseModel):
 
     def __str__(self):
         return f"{self.symbol}"
-    
 
-    def profit(self):
-        return self.investedAmount - self.closedAmount
-    
+    def perc_profit(self):
+        if self.investedAmount != 0:
+            return f"{(self.closedAmount / self.investedAmount)*100:.2f}"
+    # def profit(self):
+    #     return self.investedAmount - self.closedAmount
 
 
 class RawTransaction(BaseModel):
@@ -60,8 +62,9 @@ class RawTransaction(BaseModel):
     strikePrice     = models.DecimalField(max_digits=10,decimal_places=3, null=True)
     strikeSide      = models.CharField(max_length=1, blank=True, null=True)     # P or C
     
+    # used to make sure we don't ingest a transaction more than once
     hashID          = models.CharField(max_length=50)
-    
+
     ingested        = models.BooleanField(default=False)
     processed       = models.BooleanField(default=False)
 
