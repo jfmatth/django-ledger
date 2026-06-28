@@ -16,7 +16,7 @@ from ledger.models import RawCSV, RawTransaction, Ledger
 logger = logging.getLogger(__name__)
 
 #  these are the actions we know how to process so far
-OPTION_ACTIONS = ["Buy to Close", "Sell to Open", "Assigned"]
+OPTION_ACTIONS = ["Buy to Close", "Sell to Open", "Assigned","Expired"]
 
 NON_ACTIONS = ["MoneyLink Transfer", 
                 "Non-Qualified Div", "Qualified Dividend",
@@ -81,6 +81,7 @@ def buldTransactions():
                 hash = hash_row("".join(row.values() ) )
                 try:
                     RawTransaction.objects.get(hashID=hash)
+                    logger.debug(f"duplicate {row}")
                 except ObjectDoesNotExist:
 
                     logging.debug(f"Adding {row}")
@@ -146,7 +147,6 @@ def updateLedger():
         logger.debug(f"matching {row}")
         
         if row.action in OPTION_ACTIONS:
-            logger.debug(f'Not ingested {row}')
 
             # We either have a record or not.
             # if we do, then possibly add this to the ledger, but if qty==0 then close it
@@ -165,20 +165,27 @@ def updateLedger():
                 l.closedAmount += row.totalAmount
                 l.quantity += row.quantity
 
+
+            # CLOSING OUT Transactions
+            # OPTION_ACTIONS = ["Buy to Close", "Sell to Open", "Assigned","Expired"]
             # We might be closing out an open ledger or got assigned, either way, add to it
-            if (row.action == OPTION_ACTIONS[0] or row.action == OPTION_ACTIONS[2]):     # BTC or assigned
-                logger.info(f'BTC - {row}\n, {l}')
-                if created:
-                    l.opened = row.transactionDate
-                    l.status = "Open"
+            if (row.action == OPTION_ACTIONS[0] or      # BTC
+                row.action == OPTION_ACTIONS[2] or      # Assigned
+                row.action == OPTION_ACTIONS[3]):       # Expired
+                logger.debug(f'{row.action} - {row}\n, {l}')
+
+                # if created:
+                #     l.opened = row.transactionDate
+                #     l.status = "Open"
 
                 l.closed = row.transactionDate
-                if row.action == OPTION_ACTIONS[2]:
-                    # When we are assigned, there is no close out price
+                if row.action == OPTION_ACTIONS[2] or row.action == OPTION_ACTIONS[3]:  # Assigned or Expired
                     l.closedAmount = 0
+                    l.status = "Closed"
+                    l.quantity = 0
                 else:
                     l.closedAmount += row.totalAmount
-                l.quantity -= row.quantity
+                    l.quantity -= row.quantity
 
             # if we have balanced out our qty, most likely we are done, so close this ledger
             if l.quantity == 0:
