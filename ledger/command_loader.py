@@ -65,7 +65,7 @@ def loadCSV(filename):
         temp.save()
 
 
-def buldTransactions():
+def buildTransactions():
     """
     Converts from CSV into records in our Table
     """
