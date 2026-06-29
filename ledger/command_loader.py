@@ -1,6 +1,3 @@
-"""
-All management commands here for clarity
-"""
 import csv, hashlib, datetime
 from decimal import Decimal
 from io import StringIO
@@ -22,18 +19,6 @@ class Action(StrEnum):
     ASSIGNED = "Assigned"
     EXPIRED = "Expired"
 
-# ACTION_MLTRANSFER = "MoneyLink Transfer"
-# ACTION_NQD = "Non-Qualified Div"
-# ACTION_QD = "Qualified Dividend"
-# ACTION_BUY = "Buy"
-# ACTION_REINVESTDIV = "Reinvest Dividend"
-# ACTION_REINVESTSH = "Reinvest Shares"
-# ACTION_SELL = "Sell"
-# ACTION_TAXES = "Tax Withholding"
-
-# NON_OPTIONS = [ACTION_MLTRANSFER, ACTION_NQD, ACTION_QD, ACTION_BUY, ACTION_REINVESTDIV, ACTION_REINVESTSH, ACTION_SELL, ACTION_TAXES]
-
-
 def dollars_to_decimal(s: str) -> Decimal:
     s = s.strip()
     s = s.replace("(", "-").replace(")", "")  # accounting negatives
@@ -53,7 +38,6 @@ def schwab_date(datestr):
         d = datestr[:10]
 
     return datetime.datetime.strptime(d,"%m/%d/%Y")
-
 
 def hash_transaction(transaction):
     """Generate a unique SHA-256 hash for a gi8ven transaction."""
