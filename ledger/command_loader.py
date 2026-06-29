@@ -5,6 +5,7 @@ import csv, hashlib, datetime
 from decimal import Decimal
 from io import StringIO
 from decimal import Decimal
+from enum import StrEnum
 import re
 
 import logging
@@ -15,15 +16,22 @@ from ledger.models import RawCSV, RawTransaction, Ledger
 
 logger = logging.getLogger(__name__)
 
-#  these are the actions we know how to process so far
-OPTION_ACTIONS = ["Buy to Close", "Sell to Open", "Assigned","Expired"]
+class Action(StrEnum):
+    BTC = "Buy to Close"
+    STO = "Sell to Open"
+    ASSIGNED = "Assigned"
+    EXPIRED = "Expired"
 
-NON_ACTIONS = ["MoneyLink Transfer", 
-                "Non-Qualified Div", "Qualified Dividend",
-                "Buy", "Reinvest Dividend", "Reinvest Shares",
-                "Sell", "Tax Withholding"
-            ]
+# ACTION_MLTRANSFER = "MoneyLink Transfer"
+# ACTION_NQD = "Non-Qualified Div"
+# ACTION_QD = "Qualified Dividend"
+# ACTION_BUY = "Buy"
+# ACTION_REINVESTDIV = "Reinvest Dividend"
+# ACTION_REINVESTSH = "Reinvest Shares"
+# ACTION_SELL = "Sell"
+# ACTION_TAXES = "Tax Withholding"
 
+# NON_OPTIONS = [ACTION_MLTRANSFER, ACTION_NQD, ACTION_QD, ACTION_BUY, ACTION_REINVESTDIV, ACTION_REINVESTSH, ACTION_SELL, ACTION_TAXES]
 
 
 def dollars_to_decimal(s: str) -> Decimal:
@@ -116,7 +124,9 @@ def buildStrikeInfo():
     for row in RawTransaction.objects.filter(processed = False):
         logger.debug(f"Processing {row}")
 
-        if row.action in OPTION_ACTIONS:
+        # if row.action in OPTION_ACTIONS:
+        if row.action in Action._value2member_map_:
+
             parts = row.symbol.split(" ") # Break out the parts of the symbol for an option action [symbol,date, price, P or C]
             logger.debug(f"Parts: {parts}")
 
@@ -146,7 +156,9 @@ def updateLedger():
     for row in RawTransaction.objects.filter(ingested=False).order_by("transactionDate"):
         logger.debug(f"matching {row}")
         
-        if row.action in OPTION_ACTIONS:
+        # are any options actions in what's in row.action?
+        if row.action in Action._value2member_map_:
+        # if row.action in OPTION_ACTIONS:
 
             # We either have a record or not.
             # if we do, then possibly add this to the ledger, but if qty==0 then close it
@@ -156,36 +168,32 @@ def updateLedger():
             logger.debug(f"{row.action}")
 
             # We've sold an option, might be the first one for this "symbol" or adding to it
-            if row.action == OPTION_ACTIONS[1]:     # STO
-                if created:
-                    l.opened = row.transactionDate
-                    l.investedAmount = row.totalAmount
-                    l.status = "Open"
+            match row.action:
+                case Action.STO:
+                    if created:
+                        l.opened = row.transactionDate
+                        l.investedAmount = row.totalAmount
+                        l.status = "Open"
 
-                l.closedAmount += row.totalAmount
-                l.quantity += row.quantity
-
-
-            # CLOSING OUT Transactions
-            # OPTION_ACTIONS = ["Buy to Close", "Sell to Open", "Assigned","Expired"]
-            # We might be closing out an open ledger or got assigned, either way, add to it
-            if (row.action == OPTION_ACTIONS[0] or      # BTC
-                row.action == OPTION_ACTIONS[2] or      # Assigned
-                row.action == OPTION_ACTIONS[3]):       # Expired
-                logger.debug(f'{row.action} - {row}\n, {l}')
-
-                # if created:
-                #     l.opened = row.transactionDate
-                #     l.status = "Open"
-
-                l.closed = row.transactionDate
-                if row.action == OPTION_ACTIONS[2] or row.action == OPTION_ACTIONS[3]:  # Assigned or Expired
-                    l.closedAmount = 0
-                    l.status = "Closed"
-                    l.quantity = 0
-                else:
                     l.closedAmount += row.totalAmount
-                    l.quantity -= row.quantity
+                    l.quantity += row.quantity
+
+                case Action.BTC | Action.ASSIGNED | Action.EXPIRED :
+
+                    logger.debug(f'{row.action} - {row}\n, {l}')
+
+                    # if created:
+                    #     l.opened = row.transactionDate
+                    #     l.status = "Open"
+
+                    l.closed = row.transactionDate
+                    if row.action == Action.ASSIGNED or row.action == Action.EXPIRED:
+                        l.closedAmount = 0
+                        l.status = "Closed"
+                        l.quantity = 0
+                    else:
+                        l.closedAmount += row.totalAmount
+                        l.quantity -= row.quantity
 
             # if we have balanced out our qty, most likely we are done, so close this ledger
             if l.quantity == 0:
@@ -200,11 +208,11 @@ def updateLedger():
 
 def main():
     # loader.loadCSV(options['filename'][0])
-    buldTransactions()
+    buildTransactions()
     buildStrikeInfo()
     updateLedger()
 
 def process():
-    buldTransactions()
+    buildTransactions()
     buildStrikeInfo()
     updateLedger()
