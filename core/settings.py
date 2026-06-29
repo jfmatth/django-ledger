@@ -153,15 +153,15 @@ LOGGING = {
             'level': 'INFO',  # Django-specific logger level
             'propagate': False,
         },
-        # 'core': {
-        #     'handlers': ['console'],
-        #     'level': 'DEBUG',  # Django-specific logger level
-        #     'propagate': True, 
-        # },
+        'core': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Django-specific logger level
+            'propagate': False, 
+        },
         'ledger': {
             'handlers': ['console'],
             'level': 'INFO',  # Django-specific logger level
-            'propagate': True, 
+            'propagate': False, 
         },
 
     },
