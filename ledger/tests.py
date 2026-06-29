@@ -12,6 +12,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 FILE_SIMPLECSP = 'tests/simple-csp.csv'
+FILE_SIMPLECSPREV = 'tests/simple-csp-reversed.csv'
+FILE_SIMPLEASSIGN = 'tests/simple-assignment.csv'
 
 class loaderTest(TestCase):
     def setUp(self):
@@ -36,6 +38,36 @@ class loaderTest(TestCase):
 class simpleCSP(TestCase):
     def setUp(self):
         loader.loadCSV(FILE_SIMPLECSP)
+        loader.buildTransactions()
+        loader.buildStrikeInfo()
+        loader.updateLedger()
+        
+    def test_1(self):
+        # Verify that a simple
+        rec = Ledger.objects.get(pk=1)
+
+        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(rec.status, "Closed")
+        self.assertEqual(rec.quantity, 0)
+
+class simpleCSPReversed(TestCase):
+    def setUp(self):
+        loader.loadCSV(FILE_SIMPLECSPREV)
+        loader.buildTransactions()
+        loader.buildStrikeInfo()
+        loader.updateLedger()
+        
+    def test_1(self):
+        # Verify that a simple
+        rec = Ledger.objects.get(pk=1)
+
+        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(rec.status, "Closed")
+        self.assertEqual(rec.quantity, 0)
+
+class simpleAssignment(TestCase):
+    def setUp(self):
+        loader.loadCSV(FILE_SIMPLEASSIGN)
         loader.buildTransactions()
         loader.buildStrikeInfo()
         loader.updateLedger()

@@ -160,7 +160,7 @@ LOGGING = {
         # },
         'ledger': {
             'handlers': ['console'],
-            'level': 'DEBUG',  # Django-specific logger level
+            'level': 'INFO',  # Django-specific logger level
             'propagate': True, 
         },
 
