@@ -55,11 +55,11 @@ def schwab_date(datestr):
     return datetime.datetime.strptime(d,"%m/%d/%Y")
 
 
-def hash_row(row):
-    """Generate a unique SHA-256 hash for a gi8ven row."""
-    # row_string = ",".join(row)  # Convert row to a string
+def hash_transaction(transaction):
+    """Generate a unique SHA-256 hash for a gi8ven transaction."""
+    # transaction_string = ",".join(transaction)  # Convert transaction to a string
 
-    return hashlib.sha256(row.encode()).hexdigest()
+    return hashlib.sha256(transaction.encode()).hexdigest()
 
 
 def loadCSV(filename):
@@ -79,40 +79,40 @@ def buildTransactions():
     """
     logger.debug(f'building Transactions from CSV')
 
-    for csvrow in RawCSV.objects.filter(ingested=False):
+    for csvtransaction in RawCSV.objects.filter(ingested=False):
 
-        with StringIO(csvrow.data) as csvfile:
+        with StringIO(csvtransaction.data) as csvfile:
             reader = csv.DictReader(csvfile)
     
-            for row in reader:
+            for transaction in reader:
                 # see if we have to add this record, or if it's already there based on the hashid
-                hash = hash_row("".join(row.values() ) )
+                hash = hash_transaction("".join(transaction.values() ) )
                 try:
                     RawTransaction.objects.get(hashID=hash)
-                    logger.debug(f"duplicate {row}")
+                    logger.debug(f"duplicate {transaction}")
                 except ObjectDoesNotExist:
 
-                    logging.debug(f"Adding {row}")
+                    logging.debug(f"Adding {transaction}")
                     
                     record = RawTransaction()
 
-                    record.transactionDate  = schwab_date(row['Date'].strip())
-                    record.action           = row['Action'].strip()
-                    record.symbol           = row['Symbol'].strip()
-                    record.description      = row['Description'].strip()
-                    record.quantity         = float(dollars_to_decimal(row['Quantity']))  if row['Quantity'] != "" else 0
-                    record.price            = float(dollars_to_decimal(row['Price'])) if row['Price'] != "" else 0
+                    record.transactionDate  = schwab_date(transaction['Date'].strip())
+                    record.action           = transaction['Action'].strip()
+                    record.symbol           = transaction['Symbol'].strip()
+                    record.description      = transaction['Description'].strip()
+                    record.quantity         = float(dollars_to_decimal(transaction['Quantity']))  if transaction['Quantity'] != "" else 0
+                    record.price            = float(dollars_to_decimal(transaction['Price'])) if transaction['Price'] != "" else 0
                     record.extrafees        = 0
-                    record.totalAmount      = float(dollars_to_decimal(row['Amount']) ) if row['Amount'] != "" else 0
+                    record.totalAmount      = float(dollars_to_decimal(transaction['Amount']) ) if transaction['Amount'] != "" else 0
 
                     record.hashID           = hash
 
-                    logger.debug(f"Saving Row {record}")
+                    logger.debug(f"Saving transaction {record}")
                     record.save()
 
-        csvrow.ingested = True
-        csvrow.processed = False
-        csvrow.save()
+        csvtransaction.ingested = True
+        csvtransaction.processed = False
+        csvtransaction.save()
 
 
 def buildStrikeInfo():
@@ -121,28 +121,28 @@ def buildStrikeInfo():
     """
     logger.debug("Building Strike Info")
 
-    for row in RawTransaction.objects.filter(processed = False):
-        logger.debug(f"Processing {row}")
+    for transaction in RawTransaction.objects.filter(processed = False):
+        logger.debug(f"Processing {transaction}")
 
-        # if row.action in OPTION_ACTIONS:
-        if row.action in Action._value2member_map_:
+        # if transaction.action in OPTION_ACTIONS:
+        if transaction.action in Action._value2member_map_:
 
-            parts = row.symbol.split(" ") # Break out the parts of the symbol for an option action [symbol,date, price, P or C]
+            parts = transaction.symbol.split(" ") # Break out the parts of the symbol for an option action [symbol,date, price, P or C]
             logger.debug(f"Parts: {parts}")
 
             # Parts: ['IWM', '06/12/2025', '210.00', 'P']
-            row.strikeSymbol    = parts[0]
-            row.strikeDate      = datetime.datetime.strptime(parts[1],"%m/%d/%Y")
-            row.strikePrice     = parts[2]
-            row.strikeSide      = parts[3]
+            transaction.strikeSymbol    = parts[0]
+            transaction.strikeDate      = datetime.datetime.strptime(parts[1],"%m/%d/%Y")
+            transaction.strikePrice     = parts[2]
+            transaction.strikeSide      = parts[3]
 
-            row.processed = True
+            transaction.processed = True
 
         # # Determine which other reords we can mark as processed?
-        # if row.action in NON_ACTIONS:
-        #     row.processed = True
+        # if transaction.action in NON_ACTIONS:
+        #     transaction.processed = True
 
-        row.save()
+        transaction.save()
 
 
 def updateLedger():
@@ -153,45 +153,45 @@ def updateLedger():
     """
     logger.debug("updateLedger")
 
-    for row in RawTransaction.objects.filter(ingested=False).order_by("transactionDate"):
-        logger.debug(f"matching {row}")
+    for transaction in RawTransaction.objects.filter(ingested=False).order_by("transactionDate"):
+        logger.debug(f"matching {transaction}")
         
-        # are any options actions in what's in row.action?
-        if row.action in Action._value2member_map_:
+        # are any options actions in what's in transaction.action?
+        if transaction.action in Action._value2member_map_:
             # We either have a record or not.
             # if we do, then possibly add this to the ledger, but if qty==0 then close it
             # if we don't, make a new ledger
-            l, created = Ledger.objects.get_or_create(symbol=row.symbol, status="Open")
+            l, created = Ledger.objects.get_or_create(symbol=transaction.symbol, status="Open")
 
-            logger.debug(f"{row.action}")
+            logger.debug(f"{transaction.action}")
 
             # We've sold an option, might be the first one for this "symbol" or adding to it
-            match row.action:
+            match transaction.action:
                 case Action.STO:
                     if created:
-                        l.opened = row.transactionDate
-                        l.investedAmount = row.totalAmount
+                        l.opened = transaction.transactionDate
+                        l.investedAmount = transaction.totalAmount
                         l.status = "Open"
 
-                    l.closedAmount += row.totalAmount
-                    l.quantity += row.quantity
+                    l.closedAmount += transaction.totalAmount
+                    l.quantity += transaction.quantity
 
                 case Action.BTC | Action.ASSIGNED | Action.EXPIRED :
 
-                    logger.debug(f'{row.action} - {row}\n, {l}')
+                    logger.debug(f'{transaction.action} - {transaction}\n, {l}')
 
                     # if created:
-                    #     l.opened = row.transactionDate
+                    #     l.opened = transaction.transactionDate
                     #     l.status = "Open"
 
-                    l.closed = row.transactionDate
-                    if row.action == Action.ASSIGNED or row.action == Action.EXPIRED:
+                    l.closed = transaction.transactionDate
+                    if transaction.action == Action.ASSIGNED or transaction.action == Action.EXPIRED:
                         l.closedAmount = 0
                         l.status = "Closed"
                         l.quantity = 0
                     else:
-                        l.closedAmount += row.totalAmount
-                        l.quantity -= row.quantity
+                        l.closedAmount += transaction.totalAmount
+                        l.quantity -= transaction.quantity
 
             # if we have balanced out our qty, most likely we are done, so close this ledger
             if l.quantity == 0:
@@ -200,9 +200,9 @@ def updateLedger():
             l.save()
 
             #  attach this leedger entry to the transaction, for the 1:N relation
-            row.ledgerEntry = l
-            row.ingested = True
-            row.save()
+            transaction.ledgerEntry = l
+            transaction.ingested = True
+            transaction.save()
 
 def main():
     # loader.loadCSV(options['filename'][0])
