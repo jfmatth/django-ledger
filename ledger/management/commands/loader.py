@@ -13,7 +13,9 @@ class Command(BaseCommand):
         parser.add_argument("filename", nargs="+")
 
     def handle(self, *args, **options):
-        loader.loadCSV(options['filename'][0])
-        loader.buildTransactions()
-        loader.buildStrikeInfo()
-        loader.updateLedger()
+        # loader.loadCSV(options['filename'][0])
+        # loader.buildTransactions()
+        # loader.buildStrikeInfo()
+        # loader.updateLedger()
+
+        loader.load(options['filename'][0])
