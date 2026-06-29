@@ -143,15 +143,26 @@ LOGGING = {
             'formatter': 'verbose',  # Use the 'verbose' formatter
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',  # Root logger level
-    },
+    # 'root': {
+    #     'handlers': ['console'],
+    #     'level': 'DEBUG',  # Root logger level
+    # },
     'loggers': {
         'django': {
             'handlers': ['console'],
             'level': 'INFO',  # Django-specific logger level
             'propagate': False,
         },
+        # 'core': {
+        #     'handlers': ['console'],
+        #     'level': 'DEBUG',  # Django-specific logger level
+        #     'propagate': True, 
+        # },
+        'ledger': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Django-specific logger level
+            'propagate': True, 
+        },
+
     },
 }
