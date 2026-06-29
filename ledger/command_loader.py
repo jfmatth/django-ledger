@@ -63,7 +63,7 @@ def hash_row(row):
 
 
 def loadCSV(filename):
-    logger.info(f"loading CSV {filename}")
+    logger.debug(f"loading CSV {filename}")
     
     with open(filename,"r") as f:
         temp = RawCSV()
@@ -77,7 +77,7 @@ def buildTransactions():
     """
     Converts from CSV into records in our Table
     """
-    logger.info(f'building Transactions from CSV')
+    logger.debug(f'building Transactions from CSV')
 
     for csvrow in RawCSV.objects.filter(ingested=False):
 
@@ -119,7 +119,7 @@ def buildStrikeInfo():
     """
     Goes through all the transactions and builds the strike information for options, everything that isn't already processed.
     """
-    logger.info("Building Strike Info")
+    logger.debug("Building Strike Info")
 
     for row in RawTransaction.objects.filter(processed = False):
         logger.debug(f"Processing {row}")
@@ -158,8 +158,6 @@ def updateLedger():
         
         # are any options actions in what's in row.action?
         if row.action in Action._value2member_map_:
-        # if row.action in OPTION_ACTIONS:
-
             # We either have a record or not.
             # if we do, then possibly add this to the ledger, but if qty==0 then close it
             # if we don't, make a new ledger
