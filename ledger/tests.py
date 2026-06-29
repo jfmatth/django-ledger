@@ -61,6 +61,8 @@ class loaderDuplicateTest(TestCase):
         # All transactions are built, so see if there are two transactions
         self.assertEqual(RawTransaction.objects.all().count(),2)
 
+class loaderDuplicateTest(TestCase):
+    # verify that loading the same CSV will NOT duplicate RawTransactions
 
 
 class simpleCSP(TestCase):
@@ -114,6 +116,39 @@ class simpleAssignment(TestCase):
         self.assertEqual(rec.quantity, 0)
 
 
+class simpleCSPReversed(TestCase):
+    # Same as simpleCSP, but the transactions are loaded in reverse, just to make sure it doesn't matter
+
+    def setUp(self):
+        loader.loadCSV(FILE_SIMPLECSPREV)
+        loader.buildTransactions()
+        loader.buildStrikeInfo()
+        loader.updateLedger()
+        
+    def test_1(self):
+        # Verify that a simple
+        rec = Ledger.objects.get(pk=1)
+
+        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(rec.status, "Closed")
+        self.assertEqual(rec.quantity, 0)
+
+class simpleAssignment(TestCase):
+    # Test STO -> Assigned
+
+    def setUp(self):
+        loader.loadCSV(FILE_SIMPLEASSIGN)
+        loader.buildTransactions()
+        loader.buildStrikeInfo()
+        loader.updateLedger()
+        
+    def test_1(self):
+        # Verify that a simple
+        rec = Ledger.objects.get(pk=1)
+
+        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(rec.status, "Closed")
+        self.assertEqual(rec.quantity, 0)
 
 class simpleExpire(TestCase):
     # Test STO -> Expire

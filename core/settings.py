@@ -143,10 +143,10 @@ LOGGING = {
             'formatter': 'verbose',  # Use the 'verbose' formatter
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',  # Root logger level
-    },
+    # 'root': {
+    #     'handlers': ['console'],
+    #     'level': 'DEBUG',  # Root logger level
+    # },
     'loggers': {
         'django': {
             'handlers': ['console'],
