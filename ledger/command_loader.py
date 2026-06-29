@@ -47,7 +47,6 @@ def hash_transaction(transaction):
 
 
 def loadCSV(filename):
-    logger.debug(f"loading CSV {filename}")
     
     with open(filename,"r") as f:
         temp = RawCSV()
@@ -56,14 +55,17 @@ def loadCSV(filename):
         temp.ingested = False
         temp.save()
 
+    logger.info(f"Loaded {filename}")
+
 
 def buildTransactions():
     """
     Converts from CSV into records in our Table
     """
-    logger.debug(f'building Transactions from CSV')
 
     for csvtransaction in RawCSV.objects.filter(ingested=False):
+
+        logger.debug(f'building Transactions from CSV')
 
         with StringIO(csvtransaction.data) as csvfile:
             reader = csv.DictReader(csvfile)
@@ -103,13 +105,12 @@ def buildStrikeInfo():
     """
     Goes through all the transactions and builds the strike information for options, everything that isn't already processed.
     """
-    logger.debug("Building Strike Info")
 
     for transaction in RawTransaction.objects.filter(processed = False):
-        logger.debug(f"Processing {transaction}")
+        logger.debug("Building Strike Info")
 
-        # if transaction.action in OPTION_ACTIONS:
         if transaction.action in Action._value2member_map_:
+            logger.debug(f"Processing {transaction}")
 
             parts = transaction.symbol.split(" ") # Break out the parts of the symbol for an option action [symbol,date, price, P or C]
             logger.debug(f"Parts: {parts}")
@@ -135,34 +136,33 @@ def updateLedger():
 
     This is the meat of the program for now, make ledgers for tracking how we did on option sales
     """
-    logger.debug("updateLedger")
 
     for transaction in RawTransaction.objects.filter(ingested=False).order_by("transactionDate"):
         logger.debug(f"matching {transaction}")
         
         # are any options actions in what's in transaction.action?
         if transaction.action in Action._value2member_map_:
-            # We either have a record or not.
-            # if we do, then possibly add this to the ledger, but if qty==0 then close it
-            # if we don't, make a new ledger
+
             l, created = Ledger.objects.get_or_create(symbol=transaction.symbol, status="Open")
 
             logger.debug(f"{transaction.action}")
 
-            # We've sold an option, might be the first one for this "symbol" or adding to it
             match transaction.action:
                 case Action.STO:
+                    # We've sold an option, might be the first one for this "symbol" or adding to it
                     if created:
+                        # we created a new STO CSP (probably) so set the dtes and amounts
                         l.opened = transaction.transactionDate
                         l.investedAmount = transaction.totalAmount
                         l.status = "Open"
 
+                    # This might be added to an existing record, in which case we add to it, or if it's new, its starting at 0
                     l.closedAmount += transaction.totalAmount
                     l.quantity += transaction.quantity
 
                 case Action.BTC | Action.ASSIGNED | Action.EXPIRED :
-
-                    logger.debug(f'{transaction.action} - {transaction}\n, {l}')
+                    # Option is done, most likely, so close it out.
+                    logger.debug(f'{transaction}\n, {l}')
 
                     # if created:
                     #     l.opened = transaction.transactionDate
@@ -172,6 +172,7 @@ def updateLedger():
                     if transaction.action == Action.ASSIGNED or transaction.action == Action.EXPIRED:
                         l.closedAmount = 0
                         l.status = "Closed"
+                        # should we checkt that the amount of the closing amount matches what's open?  FOR NOW - no.
                         l.quantity = 0
                     else:
                         l.closedAmount += transaction.totalAmount
@@ -188,13 +189,14 @@ def updateLedger():
             transaction.ingested = True
             transaction.save()
 
-def main():
-    # loader.loadCSV(options['filename'][0])
-    buildTransactions()
-    buildStrikeInfo()
-    updateLedger()
+            logger.info(f"Processes transaction {transaction}")
+
+def load(filename):
+    loadCSV(filename)
+    process()
 
 def process():
+    # run all processing without the loading :)
     buildTransactions()
     buildStrikeInfo()
     updateLedger()
