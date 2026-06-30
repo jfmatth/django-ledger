@@ -47,7 +47,9 @@ def hash_transaction(transaction):
 
 
 def loadCSV(filename):
-    
+
+    logger.info(f"Loading {filename}..")
+
     with open(filename,"r") as f:
         temp = RawCSV()
         temp.filename = filename
@@ -55,7 +57,7 @@ def loadCSV(filename):
         temp.ingested = False
         temp.save()
 
-    logger.info(f"Loaded {filename}")
+    logger.info(f"Loaded")
 
 
 def buildTransactions():
@@ -65,7 +67,7 @@ def buildTransactions():
 
     for csvtransaction in RawCSV.objects.filter(ingested=False):
 
-        logger.debug(f'building Transactions from CSV')
+        logger.info(f'building Transactions from CSV {csvtransaction}')
 
         with StringIO(csvtransaction.data) as csvfile:
             reader = csv.DictReader(csvfile)
@@ -106,6 +108,8 @@ def buildStrikeInfo():
     Goes through all the transactions and builds the strike information for options, everything that isn't already processed.
     """
 
+    logger.info(f"Building StrikeInfo")
+
     for transaction in RawTransaction.objects.filter(processed = False):
         logger.debug("Building Strike Info")
 
@@ -136,6 +140,8 @@ def updateLedger():
 
     This is the meat of the program for now, make ledgers for tracking how we did on option sales
     """
+
+    logger.info("Updating Ledger...")
 
     for transaction in RawTransaction.objects.filter(ingested=False).order_by("transactionDate"):
         logger.debug(f"matching {transaction}")
@@ -189,7 +195,7 @@ def updateLedger():
             transaction.ingested = True
             transaction.save()
 
-            logger.info(f"Processes transaction {transaction}")
+            logger.debug(f"Processes transaction {transaction}")
 
 def load(filename):
     loadCSV(filename)
