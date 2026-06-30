@@ -38,11 +38,31 @@ class Ledger(BaseModel):
     def __str__(self):
         return f"{self.symbol}"
 
+    def profit(self):
+        return self.investedAmount - self.closedAmount
+
     def perc_profit(self):
         if self.investedAmount != 0:
             return f"{(self.closedAmount / self.investedAmount)*100:.2f}"
-    # def profit(self):
-    #     return self.investedAmount - self.closedAmount
+    
+    @property
+    def days_between(self):
+        if self.opened and self.closed:
+            return (self.closed - self.opened).days
+        
+        return 0
+
+    def time_profit(self):
+        # Daily Profit Percentage=(Profit/Days) / Investment) × 100
+        days = max(self.days_between,1)
+
+        if self.status == "Closed" and self.investedAmount != 0:
+            return f"{( ((self.investedAmount - self.closedAmount)/days) / self.investedAmount) * 100:.2f}"
+        else:
+            return f"N/A"
+    
+    # # def profit(self):
+    # #     return self.investedAmount - self.closedAmount
 
 
 class RawTransaction(BaseModel):
