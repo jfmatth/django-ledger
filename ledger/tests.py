@@ -14,6 +14,7 @@ FILE_SIMPLECSP = 'tests/simple-csp.csv'
 FILE_SIMPLECSPREV = 'tests/simple-csp-reversed.csv'
 FILE_SIMPLEASSIGN = 'tests/simple-assignment.csv'
 FILE_SIMPLEEXPIRE = 'tests/simple-expire.csv'
+FILE_PARTIALCSP = 'tests/partial-csp.csv'
 
 class loaderTest(TestCase):
     # Test that the loader and buildstransactions actually do what we need 
@@ -61,9 +62,6 @@ class loaderDuplicateTest(TestCase):
         # All transactions are built, so see if there are two transactions
         self.assertEqual(RawTransaction.objects.all().count(),2)
 
-class loaderDuplicateTest(TestCase):
-    # verify that loading the same CSV will NOT duplicate RawTransactions
-
 
 class simpleCSP(TestCase):
     # Load a simple CSP transaction set (STO -> BTC), should close it out and show the profit
@@ -78,6 +76,22 @@ class simpleCSP(TestCase):
         self.assertEqual(Ledger.objects.all().count(), 1)
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
+
+
+class partialCSP(TestCase):
+    # See what happens when we only sell part of a CSP
+
+    def setUp(self):
+        loader.load(FILE_PARTIALCSP)
+        
+    def test_10_csp_partial_sucess(self):
+        # Not closed, and qty > 0
+        rec = Ledger.objects.get(pk=1)
+
+        # it should still be open
+        self.assertEqual(rec.status, "Open")
+        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertGreater(rec.quantity, 0)
 
 
 
@@ -102,7 +116,7 @@ class simpleCSPReversed(TestCase):
 
 
 class simpleAssignment(TestCase):
-    # Test STO -> Assigned
+    # STO -> Assigned
 
     def setUp(self):
         loader.load(FILE_SIMPLEASSIGN)
@@ -132,6 +146,8 @@ class simpleCSPReversed(TestCase):
         self.assertEqual(Ledger.objects.all().count(), 1)
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
+
+
 
 class simpleAssignment(TestCase):
     # Test STO -> Assigned
