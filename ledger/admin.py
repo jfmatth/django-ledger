@@ -24,7 +24,7 @@ class LedgerAdmin(admin.ModelAdmin):
 
     readonly_fields = ("profit", "perc_profit", "time_profit",)
 
-    list_display = ["symbol", "status", "opened", "closed", "profit", "time_profit" ]
+    list_display = ["symbol", "status", "opened", "closed", "days_between", "profit", "time_profit" ]
     list_filter = ['status', ]
 
     inlines = [
