@@ -5,7 +5,7 @@ import os
 from django.test import TestCase
 
 import ledger.command_loader as loader
-from ledger.models import RawCSV, RawTransaction, OptionLedger
+from ledger.models import RawCSV, RawTransaction, OptionLedger, StockLedger
 
 import logging
 logger = logging.getLogger(__name__)
@@ -17,6 +17,7 @@ FILE_SIMPLEEXPIRE = 'tests/simple-expire.csv'
 FILE_PARTIALCSP = 'tests/partial-csp.csv'
 
 FILE_SIMPLEBUY = "tests/simple-buy.csv"
+FILE_SIMPLESELL = "tests/simple-sell.csv"
 
 class loaderTest(TestCase):
     # Test that the loader and buildstransactions actually do what we need 
@@ -189,3 +190,22 @@ class simpleBuy(TestCase):
     def setUp(self):
         loader.load(FILE_SIMPLEBUY)
 
+    def test_10_simplebuy(self):
+        rec = StockLedger.objects.get(pk=1)
+
+        self.assertEqual(StockLedger.objects.all().count(),1)
+        self.assertEqual(rec.quantity,200)
+        self.assertEqual(rec.investedAmount, -29000)
+
+
+class simpleSell(TestCase):
+
+    def setUp(self):
+        loader.load(FILE_SIMPLESELL)
+
+    def test_10_simplebuy(self):
+        rec = StockLedger.objects.get(pk=1)
+
+        self.assertEqual(StockLedger.objects.all().count(),1)
+        self.assertEqual(rec.quantity,100)
+        self.assertEqual(float(rec.investedAmount), 21499.540)

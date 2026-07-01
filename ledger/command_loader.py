@@ -211,22 +211,24 @@ def updateLedgers():
 
             match transaction.action:
                 case StockAction.SELL:
-                    ...
+                    l.investedAmount += transaction.totalAmount
+                    l.quantity += transaction.quantity
 
                 case StockAction.BUY:
+                    # we bought some stock
                     if created:
-                        # we bought some stock
-                        l.investedAmount = transaction.totalAmount
                         l.status = "Open"
+                        # l.opened = transaction.transactionDate
+    
+                    l.investedAmount += transaction.totalAmount
 
-                    l.opened = transaction.transactionDate
-
+    
                     # This might be added to an existing record, in which case we add to it, or if it's new, its starting at 0
                     l.quantity += transaction.quantity
         
-                    transaction.StockledgerEntry = l
-                    transaction.ingested = True
-                    transaction.save()
+            transaction.StockledgerEntry = l
+            transaction.ingested = True
+            transaction.save()
 
             l.save()
 
