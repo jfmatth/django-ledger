@@ -207,5 +207,5 @@ class simpleSell(TestCase):
         rec = StockLedger.objects.get(pk=1)
 
         self.assertEqual(StockLedger.objects.all().count(),1)
-        self.assertEqual(rec.quantity,100)
+        self.assertEqual(rec.quantity,-100)
         self.assertEqual(float(rec.investedAmount), 21499.540)

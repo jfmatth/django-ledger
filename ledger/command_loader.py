@@ -212,7 +212,7 @@ def updateLedgers():
             match transaction.action:
                 case StockAction.SELL:
                     l.investedAmount += transaction.totalAmount
-                    l.quantity += transaction.quantity
+                    l.quantity -= transaction.quantity
 
                 case StockAction.BUY:
                     # we bought some stock
