@@ -158,9 +158,10 @@ def updateLedger():
                     # We've sold an option, might be the first one for this "symbol" or adding to it
                     if created:
                         # we created a new STO CSP (probably) so set the dtes and amounts
-                        l.opened = transaction.transactionDate
                         l.investedAmount = transaction.totalAmount
                         l.status = "Open"
+
+                    l.opened = transaction.transactionDate
 
                     # This might be added to an existing record, in which case we add to it, or if it's new, its starting at 0
                     l.closedAmount += transaction.totalAmount
