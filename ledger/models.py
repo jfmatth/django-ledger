@@ -27,10 +27,12 @@ class RawCSV(BaseModel):
 
 class StockLedger(BaseModel):
     symbol      = models.CharField(max_length=50)
-    quantity     = models.DecimalField(max_digits=10, decimal_places=3, default=0)
+    quantity     = models.DecimalField(max_digits=10, decimal_places=3, default=0, blank=True)
+    investedAmount = models.DecimalField(max_digits=20, decimal_places=3, default=0, blank=True)
+    status       = models.CharField(max_length=10, blank=True, null=True)
 
-    def __init__(self):
-        return f'{self.symbol} - {self.quantity}'
+    def __str__(self):
+        return f"{self.symbol} - {self.quantity}"
 
 
 class OptionLedger(BaseModel):
@@ -94,7 +96,8 @@ class RawTransaction(BaseModel):
     processed       = models.BooleanField(default=False)
 
     OptionledgerEntry     = models.ForeignKey(OptionLedger, null=True, blank=True, on_delete=models.SET_NULL)
-
+    StockledgerEntry      = models.ForeignKey(StockLedger, null=True, blank=True, on_delete=models.SET_NULL)
+    
     def __str__(self):
         return f"{self.transactionDate} - {self.action} - {self.description}"
 

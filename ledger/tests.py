@@ -16,6 +16,8 @@ FILE_SIMPLEASSIGN = 'tests/simple-assignment.csv'
 FILE_SIMPLEEXPIRE = 'tests/simple-expire.csv'
 FILE_PARTIALCSP = 'tests/partial-csp.csv'
 
+FILE_SIMPLEBUY = "tests/simple-buy.csv"
+
 class loaderTest(TestCase):
     # Test that the loader and buildstransactions actually do what we need 
 
@@ -166,6 +168,7 @@ class simpleAssignment(TestCase):
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
 
+
 class simpleExpire(TestCase):
     # Test STO -> Expire
 
@@ -179,3 +182,10 @@ class simpleExpire(TestCase):
         self.assertEqual(OptionLedger.objects.all().count(), 1)
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
+
+
+class simpleBuy(TestCase):
+
+    def setUp(self):
+        loader.load(FILE_SIMPLEBUY)
+

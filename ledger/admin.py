@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 
-from ledger.models import RawCSV, RawTransaction, OptionLedger
+from ledger.models import RawCSV, RawTransaction, OptionLedger, StockLedger
 
 class RawCSVAdmin(admin.ModelAdmin):
     pass
@@ -32,3 +32,16 @@ class LedgerAdmin(admin.ModelAdmin):
     ]
 
 admin.site.register(OptionLedger, LedgerAdmin)
+
+class StockLedgerAdmin(admin.ModelAdmin):
+
+    # readonly_fields = ("profit", "perc_profit", "time_profit",)
+
+    # list_display = ["symbol", "status", "opened", "closed", "days_between", "profit", "time_profit" ]
+    # list_filter = ['status', ]
+
+    inlines = [
+        TransactionInLine,
+    ]
+
+admin.site.register(StockLedger, StockLedgerAdmin)
