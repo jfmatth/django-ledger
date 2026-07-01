@@ -9,7 +9,7 @@ import logging
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from ledger.models import RawCSV, RawTransaction, Ledger
+from ledger.models import RawCSV, RawTransaction, OptionLedger
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ def updateLedger():
         # are any options actions in what's in transaction.action?
         if transaction.action in Action._value2member_map_:
 
-            l, created = Ledger.objects.get_or_create(symbol=transaction.symbol, status="Open")
+            l, created = OptionLedger.objects.get_or_create(symbol=transaction.symbol, status="Open")
 
             logger.debug(f"{transaction.action}")
 

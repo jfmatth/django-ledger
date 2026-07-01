@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 
-from ledger.models import RawCSV, RawTransaction, Ledger
+from ledger.models import RawCSV, RawTransaction, OptionLedger
 
 class RawCSVAdmin(admin.ModelAdmin):
     pass
@@ -31,4 +31,4 @@ class LedgerAdmin(admin.ModelAdmin):
         TransactionInLine,
     ]
 
-admin.site.register(Ledger, LedgerAdmin)
+admin.site.register(OptionLedger, LedgerAdmin)

@@ -25,7 +25,7 @@ class RawCSV(BaseModel):
         return f"{self.filename}-{self.ingested}"
 
 
-class Ledger(BaseModel):
+class OptionLedger(BaseModel):
     symbol      = models.CharField(max_length=50)
 
     opened       = models.DateField(blank=True, null=True)
@@ -88,7 +88,7 @@ class RawTransaction(BaseModel):
     ingested        = models.BooleanField(default=False)
     processed       = models.BooleanField(default=False)
 
-    ledgerEntry     = models.ForeignKey(Ledger, null=True, blank=True, on_delete=models.SET_NULL)
+    ledgerEntry     = models.ForeignKey(OptionLedger, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return f"{self.transactionDate} - {self.action} - {self.description}"

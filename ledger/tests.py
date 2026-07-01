@@ -5,7 +5,7 @@ import os
 from django.test import TestCase
 
 import ledger.command_loader as loader
-from ledger.models import RawCSV, RawTransaction, Ledger
+from ledger.models import RawCSV, RawTransaction, OptionLedger
 
 import logging
 logger = logging.getLogger(__name__)
@@ -71,9 +71,9 @@ class simpleCSP(TestCase):
         
     def test_10_csp_sucess(self):
         # Verify that a simple
-        rec = Ledger.objects.get(pk=1)
+        rec = OptionLedger.objects.get(pk=1)
 
-        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(OptionLedger.objects.all().count(), 1)
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
 
@@ -86,11 +86,11 @@ class partialCSP(TestCase):
         
     def test_10_csp_partial_sucess(self):
         # Not closed, and qty > 0
-        rec = Ledger.objects.get(pk=1)
+        rec = OptionLedger.objects.get(pk=1)
 
         # it should still be open
         self.assertEqual(rec.status, "Open")
-        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(OptionLedger.objects.all().count(), 1)
         self.assertGreater(rec.quantity, 0)
 
 
@@ -107,9 +107,9 @@ class simpleCSPReversed(TestCase):
         
     def test_10_csp_sucess(self):
         # Verify that a simple
-        rec = Ledger.objects.get(pk=1)
+        rec = OptionLedger.objects.get(pk=1)
 
-        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(OptionLedger.objects.all().count(), 1)
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
 
@@ -123,9 +123,9 @@ class simpleAssignment(TestCase):
         
     def test_10_csp_assign_sucess(self):
         # Verify that a simple
-        rec = Ledger.objects.get(pk=1)
+        rec = OptionLedger.objects.get(pk=1)
 
-        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(OptionLedger.objects.all().count(), 1)
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
 
@@ -141,9 +141,9 @@ class simpleCSPReversed(TestCase):
         
     def test_1(self):
         # Verify that a simple
-        rec = Ledger.objects.get(pk=1)
+        rec = OptionLedger.objects.get(pk=1)
 
-        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(OptionLedger.objects.all().count(), 1)
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
 
@@ -160,9 +160,9 @@ class simpleAssignment(TestCase):
         
     def test_1(self):
         # Verify that a simple
-        rec = Ledger.objects.get(pk=1)
+        rec = OptionLedger.objects.get(pk=1)
 
-        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(OptionLedger.objects.all().count(), 1)
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
 
@@ -174,8 +174,8 @@ class simpleExpire(TestCase):
         
     def test_10_csp_expire(self):
         # There should be one record in the Ledger
-        rec = Ledger.objects.get(pk=1)
+        rec = OptionLedger.objects.get(pk=1)
 
-        self.assertEqual(Ledger.objects.all().count(), 1)
+        self.assertEqual(OptionLedger.objects.all().count(), 1)
         self.assertEqual(rec.status, "Closed")
         self.assertEqual(rec.quantity, 0)
