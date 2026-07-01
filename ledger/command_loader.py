@@ -9,15 +9,20 @@ import logging
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from ledger.models import RawCSV, RawTransaction, OptionLedger
+from ledger.models import RawCSV, RawTransaction, OptionLedger, StockLedger
 
 logger = logging.getLogger(__name__)
 
-class Action(StrEnum):
+class OptionAction(StrEnum):
     BTC = "Buy to Close"
     STO = "Sell to Open"
     ASSIGNED = "Assigned"
     EXPIRED = "Expired"
+
+class StockAction(StrEnum):
+    BUY = "Buy"
+    SELL = "Sell"
+
 
 def dollars_to_decimal(s: str) -> Decimal:
     s = s.strip()
@@ -113,7 +118,7 @@ def buildStrikeInfo():
     for transaction in RawTransaction.objects.filter(processed = False):
         logger.debug("Building Strike Info")
 
-        if transaction.action in Action._value2member_map_:
+        if transaction.action in OptionAction._value2member_map_:
             logger.debug(f"Processing {transaction}")
 
             parts = transaction.symbol.split(" ") # Break out the parts of the symbol for an option action [symbol,date, price, P or C]
@@ -134,7 +139,7 @@ def buildStrikeInfo():
         transaction.save()
 
 
-def updateLedger():
+def updateLedgers():
     """
     Creates or updates ledgers on anything that's not processed
 
@@ -146,15 +151,15 @@ def updateLedger():
     for transaction in RawTransaction.objects.filter(ingested=False).order_by("transactionDate"):
         logger.debug(f"matching {transaction}")
         
-        # are any options actions in what's in transaction.action?
-        if transaction.action in Action._value2member_map_:
+        # are any actions in what's in transaction.action?
+        if transaction.action in OptionAction._value2member_map_:
 
             l, created = OptionLedger.objects.get_or_create(symbol=transaction.symbol, status="Open")
 
             logger.debug(f"{transaction.action}")
 
             match transaction.action:
-                case Action.STO:
+                case OptionAction.STO:
                     # We've sold an option, might be the first one for this "symbol" or adding to it
                     if created:
                         # we created a new STO CSP (probably) so set the dtes and amounts
@@ -167,7 +172,7 @@ def updateLedger():
                     l.closedAmount += transaction.totalAmount
                     l.quantity += transaction.quantity
 
-                case Action.BTC | Action.ASSIGNED | Action.EXPIRED :
+                case OptionAction.BTC | OptionAction.ASSIGNED | OptionAction.EXPIRED :
                     # Option is done, most likely, so close it out.
                     logger.debug(f'{transaction}\n, {l}')
 
@@ -176,7 +181,7 @@ def updateLedger():
                     #     l.status = "Open"
 
                     l.closed = transaction.transactionDate
-                    if transaction.action == Action.ASSIGNED or transaction.action == Action.EXPIRED:
+                    if transaction.action == OptionAction.ASSIGNED or transaction.action == OptionAction.EXPIRED:
                         l.closedAmount = 0
                         l.status = "Closed"
                         # should we checkt that the amount of the closing amount matches what's open?  FOR NOW - no.
@@ -192,11 +197,26 @@ def updateLedger():
             l.save()
 
             #  attach this leedger entry to the transaction, for the 1:N relation
-            transaction.ledgerEntry = l
+            transaction.OptionledgerEntry = l
             transaction.ingested = True
             transaction.save()
 
-            logger.debug(f"Processes transaction {transaction}")
+            logger.debug(f"Option Leger {transaction} processed")
+
+
+        if transaction.action in StockAction._value2member_map_:
+
+            # Stock action
+            l, created = StockLedger.objects.get_or_create(symbol=transaction.symbol)
+
+            match transaction.action:
+                case StockAction.SELL:
+                    ...
+
+                case StockAction.BUY:
+                    ...
+
+
 
 def load(filename):
     loadCSV(filename)
@@ -206,4 +226,4 @@ def process():
     # run all processing without the loading :)
     buildTransactions()
     buildStrikeInfo()
-    updateLedger()
+    updateLedgers()

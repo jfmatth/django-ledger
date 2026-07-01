@@ -25,6 +25,14 @@ class RawCSV(BaseModel):
         return f"{self.filename}-{self.ingested}"
 
 
+class StockLedger(BaseModel):
+    symbol      = models.CharField(max_length=50)
+    quantity     = models.DecimalField(max_digits=10, decimal_places=3, default=0)
+
+    def __init__(self):
+        return f'{self.symbol} - {self.quantity}'
+
+
 class OptionLedger(BaseModel):
     symbol      = models.CharField(max_length=50)
 
@@ -61,9 +69,6 @@ class OptionLedger(BaseModel):
         else:
             return f"N/A"
     
-    # # def profit(self):
-    # #     return self.investedAmount - self.closedAmount
-
 
 class RawTransaction(BaseModel):
     # Same fields as Schwab CVS
@@ -88,7 +93,7 @@ class RawTransaction(BaseModel):
     ingested        = models.BooleanField(default=False)
     processed       = models.BooleanField(default=False)
 
-    ledgerEntry     = models.ForeignKey(OptionLedger, null=True, blank=True, on_delete=models.SET_NULL)
+    OptionledgerEntry     = models.ForeignKey(OptionLedger, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return f"{self.transactionDate} - {self.action} - {self.description}"

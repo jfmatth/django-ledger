@@ -137,7 +137,7 @@ class simpleCSPReversed(TestCase):
         loader.loadCSV(FILE_SIMPLECSPREV)
         loader.buildTransactions()
         loader.buildStrikeInfo()
-        loader.updateLedger()
+        loader.updateLedgers()
         
     def test_1(self):
         # Verify that a simple
@@ -156,7 +156,7 @@ class simpleAssignment(TestCase):
         loader.loadCSV(FILE_SIMPLEASSIGN)
         loader.buildTransactions()
         loader.buildStrikeInfo()
-        loader.updateLedger()
+        loader.updateLedgers()
         
     def test_1(self):
         # Verify that a simple
