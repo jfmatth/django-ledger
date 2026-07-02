@@ -18,6 +18,7 @@ FILE_PARTIALCSP = 'tests/partial-csp.csv'
 
 FILE_SIMPLEBUY = "tests/simple-buy.csv"
 FILE_SIMPLESELL = "tests/simple-sell.csv"
+FILE_SIMPLEBUYSELL = "tests/simple-buysell.csv"
 
 class loaderTest(TestCase):
     # Test that the loader and buildstransactions actually do what we need 
@@ -203,9 +204,21 @@ class simpleSell(TestCase):
     def setUp(self):
         loader.load(FILE_SIMPLESELL)
 
-    def test_10_simplebuy(self):
+    def test_10_simplesell(self):
         rec = StockLedger.objects.get(pk=1)
 
         self.assertEqual(StockLedger.objects.all().count(),1)
         self.assertEqual(rec.quantity,-100)
         self.assertEqual(float(rec.investedAmount), 21499.540)
+
+class simpleBuySell(TestCase):
+
+    def setUp(self):
+        loader.load(FILE_SIMPLEBUYSELL)
+
+    def test_10_simplebuysell(self):
+        rec = StockLedger.objects.get(pk=1)
+
+        self.assertEqual(StockLedger.objects.all().count(),1)
+        self.assertEqual(rec.quantity,0)
+        self.assertEqual(float(rec.investedAmount), 1749.08)
